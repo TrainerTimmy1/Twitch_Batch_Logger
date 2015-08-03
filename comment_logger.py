@@ -64,7 +64,6 @@ if os.path.isfile(config_path):
 	oauth = config.get('Settings', 'oauth')
 	record_raw = config.getboolean('Settings', 'record_raw')
 	timestamp_format = config.getint('Settings', 'timestamp_format')
-	twitchclient_version = config.getint('Settings', 'twitchclient_version')
 	regular_chat_server = config.get('Settings', 'regular_chat_server')
 	group_chat_server = config.get('Settings', 'group_chat_server')
 	event_chat_server = config.get('Settings', 'event_chat_server')
@@ -86,15 +85,14 @@ if record_raw:
 raw_log_path = current_directory + '/comment_log_raw/' + chat_channel + '.txt'
 log_path = current_directory + '/comment_log/' + chat_channel + '.txt'
 
-bot = irc_bot.irc_bot(username, oauth, chat_channel, chat_server[0], chat_server[1], twitchclient_version = twitchclient_version)
+bot = irc_bot.irc_bot(username, oauth, chat_channel, chat_server[0], chat_server[1], membership = 1, commands = 1, tags = 1)
 while 1:
-	raw_msg_list = bot.get_message()
-	if len(raw_msg_list) > 0:
+	msg_list = bot.get_parsed_message()
+	for item in msg_list:
 		timestamp = get_timestamp(timestamp_format)
-		for item in raw_msg_list:
-			if record_raw:
-				log_add(raw_log_path, timestamp + ' ' + item + '\n')
-			username, message = irc_bot.parse_user(item)
-			if username != '':
-				safe_print(chat_channel + " " + username + ": " + message)
-				log_add(log_path, timestamp + ' ' + username + ': ' + message + '\n')
+		if record_raw:
+			log_add(raw_log_path, timestamp + ' ' + item.raw_message + '\n')
+		username, message = irc_bot.filter_user_msg(item)
+		if username != '':
+			safe_print(chat_channel + " " + username + ": " + message)
+			log_add(log_path, timestamp + ' ' + username + ': ' + message + '\n')
